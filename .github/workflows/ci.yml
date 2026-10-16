@@ -12,7 +12,7 @@ env:
   LOCAL_IMAGE: notifications-api:ci
 
 jobs:
-  test:
+  validate-image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -45,8 +45,8 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  publish:
-    needs: test
+  publish-image:
+    needs: validate-image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
