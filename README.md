@@ -66,6 +66,7 @@ The example credentials are for local development only.
 - Non‑root container runtime.
 - Minimal runtime footprint using production‑only dependencies.
 - CI vulnerability scanning using Trivy, failing on fixable HIGH or CRITICAL findings.
+- Third-party GitHub Actions are pinned to full commit SHAs to avoid relying on movable version tags.
 - CI scans and runs the same built image (`notifications-api:ci`).
 - Least‑privilege GitHub Actions permissions (`contents: read` by default).
 - GHCR publishing uses GitHub’s built‑in `GITHUB_TOKEN`.
