@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  LOCAL_IMAGE: notifications-api:ci
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t "$LOCAL_IMAGE" .
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.LOCAL_IMAGE }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Start the stack and wait until it is healthy
+        env:
+          API_IMAGE: ${{ env.LOCAL_IMAGE }}
+        run: docker compose up -d --no-build --wait --wait-timeout 120
+
+      - name: Smoke test
+        run: bash scripts/ops.sh smoke
+
+      - name: Show logs if something failed
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  publish:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Build and push (tags - latest and commit SHA)
+        run: |
+          IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}
+          docker build -t "$IMAGE:latest" -t "$IMAGE:$GITHUB_SHA" .
+          docker push "$IMAGE" --all-tags
