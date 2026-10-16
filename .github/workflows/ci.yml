@@ -7,13 +7,15 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   LOCAL_IMAGE: notifications-api:ci
 
 jobs:
-  validate-image:
+  build-test-and-publish:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -45,28 +47,21 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  publish-image:
-    needs: validate-image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
       - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
       - name: Tag validated image for publishing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}
           docker tag notifications-api:ci "$IMAGE:latest"
           docker tag notifications-api:ci "$IMAGE:$GITHUB_SHA"
 
       - name: Push validated image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}
           docker push "$IMAGE" --all-tags
