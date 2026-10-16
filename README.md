@@ -87,8 +87,7 @@ The GitHub Actions workflow runs on pull requests and pushes to `main`.
 5. Run smoke tests using `scripts/ops.sh smoke`.
 6. Print logs on failure; always remove the stack and test database volume.
 
-On pushes to `main`, a publish job runs only after verification succeeds.  
-It publishes the image to GHCR with `latest` and full commit SHA tags.
+On pushes to `main`, the same workflow logs in to GHCR, tags the validated image with `latest` and the full commit SHA, and pushes it to GHCR.
 
 ## Operational Commands
 
