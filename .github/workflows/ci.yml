@@ -60,8 +60,13 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-      - name: Build and push (tags - latest and commit SHA)
+      - name: Tag validated image for publishing
         run: |
           IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}
-          docker build -t "$IMAGE:latest" -t "$IMAGE:$GITHUB_SHA" .
+          docker tag notifications-api:ci "$IMAGE:latest"
+          docker tag notifications-api:ci "$IMAGE:$GITHUB_SHA"
+
+      - name: Push validated image
+        run: |
+          IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}
           docker push "$IMAGE" --all-tags
